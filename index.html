@@ -1,0 +1,214 @@
+<!DOCTYPE html> 
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Čtenář Zeměplochy</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f3f3f3;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #0078d4;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 20px;
+      margin-right: 10px;
+      background-color: #e1e1e1;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab.active {
+      background-color: #ffffff;
+      border-bottom: 2px solid #0078d4;
+    }
+    .content {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 0 4px 4px 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .book {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .book input {
+      margin-right: 10px;
+    }
+    .recommendation {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e5f1fb;
+      border-left: 4px solid #0078d4;
+      white-space: pre-line;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .progress-container {
+      margin-top: 20px;
+    }
+    .progress-label {
+      margin-bottom: 5px;
+    }
+    .progress-bar-multi {
+      display: flex;
+      height: 20px;
+      width: 100%;
+      border-radius: 4px;
+      overflow: hidden;
+      background-color: #e1e1e1;
+    }
+    .segment {
+      height: 100%;
+    }
+    .read { background-color: #4caf50; }
+    .skipped { background-color: #ff9800; }
+    .unread { background-color: #cccccc; }
+  </style>
+</head>
+<body>
+
+  <h1>Čtenář Zeměplochy</h1>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('chronological')">Chronologicky</div>
+    <div class="tab" onclick="showTab('series')">Minisérie</div>
+  </div>
+
+  <div id="chronological" class="content">
+    <div id="bookList"></div>
+    <button onclick="evaluateProgress()">Vyhodnotit pokrok</button>
+
+    <div class="progress-container">
+      <div class="progress-label">📚 Pokrok v sérii:</div>
+      <div class="progress-bar-multi" id="multiProgressBar"></div>
+    </div>
+
+    <div class="recommendation" id="recommendation">
+      Doporučení: Začni čtením "Barva kouzel".
+    </div>
+  </div>
+
+  <div id="series" class="content" style="display:none;">
+    <p>Rozdělení podle minisérií bude doplněno.</p>
+  </div>
+
+  <script>
+    const booksChrono = [
+      "Barva kouzel", "Lehké fantastično", "Rovnoramenná magie", "Mort", "Magický prazdroj",
+      "Soudné sestry", "Pyramidy", "Stráže! Stráže!", "Eric", "Pohyblivé obrázky",
+      "Sekáč", "Čarodějky na cestách", "Malí bohové", "Zbroj", "Dámy a pánové",
+      "Pátý elefant", "Otec prasátek", "Hrrr na ně!", "Carpe Jugulum", "Zaslaná pošta",
+      "Nohy z jílu", "Opravdová kouzla", "Zloděj času", "Poslední kontinent", "Noční hlídka",
+      "Nadělat prachy", "Nevídaní akademikové", "Zimoděj", "Podivný regiment", "Klub rváčů",
+      "Pohyblivé obrázky II", "Nikdykde", "Mazané malé muže", "Zaslaná pošta II", "Nadělat prachy II",
+      "Podfuk", "Těžké melodično", "Zimoděj II", "Pastýřská koruna", "Píseň zloděje smrti", "Zaslaná pošta III"
+    ];
+
+    function showTab(tabName) {
+      document.getElementById('chronological').style.display = tabName === 'chronological' ? 'block' : 'none';
+      document.getElementById('series').style.display = tabName === 'series' ? 'block' : 'none';
+      const tabs = document.getElementsByClassName('tab');
+      for (let i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+      }
+      event.target.classList.add('active');
+    }
+
+    window.onload = function () {
+      const bookList = document.getElementById("bookList");
+      booksChrono.forEach((book, index) => {
+        const div = document.createElement("div");
+        div.className = "book";
+        div.innerHTML = `
+          <input type="checkbox" id="book${index + 1}" onchange="evaluateProgress()">
+          <label for="book${index + 1}">${index + 1}. ${book}</label>
+        `;
+        bookList.appendChild(div);
+      });
+    }
+
+    function evaluateProgress() {
+      let read = 0;
+      let skipped = 0;
+      let lastReadIndex = -1;
+
+      for (let i = 0; i < booksChrono.length; i++) {
+        const checkbox = document.getElementById(`book${i + 1}`);
+        if (checkbox.checked) {
+          read++;
+          lastReadIndex = i;
+        }
+      }
+
+      for (let i = 0; i < lastReadIndex; i++) {
+        const checkbox = document.getElementById(`book${i + 1}`);
+        if (!checkbox.checked) skipped++;
+      }
+
+      const total = booksChrono.length;
+      let message = "";
+
+      if (skipped > 0) {
+        const skippedBooks = [];
+        for (let i = 0; i < lastReadIndex; i++) {
+          const checkbox = document.getElementById(`book${i + 1}`);
+          if (!checkbox.checked) skippedBooks.push(booksChrono[i]);
+        }
+        message += "⚠️  Pozor, přeskočil/a jsi tyto knihy:\n" + skippedBooks.map(b => `– ${b}`).join("\n") + "\n\n";
+      }
+
+      if (lastReadIndex + 1 < total) {
+        message += "📖 Doporučujeme přečíst jako další: " + booksChrono[lastReadIndex + 1];
+      } else if (lastReadIndex === total - 1) {
+        message += "✅ Máš přečtenou celou sérii! Skvělé!";
+      } else {
+        message += "Začni čtením \"Barva kouzel\" 😊";
+      }
+
+      document.getElementById('recommendation').innerText = message;
+      updateProgressBar(read, skipped, total, lastReadIndex);
+    }
+
+    function updateProgressBar(read, skipped, total, lastReadIndex) {
+      const container = document.getElementById('multiProgressBar');
+      container.innerHTML = '';
+
+      for (let i = 0; i < total; i++) {
+        const checkbox = document.getElementById(`book${i + 1}`);
+        const segment = document.createElement('div');
+        segment.classList.add('segment');
+        segment.style.width = `${100 / total}%`;
+
+        if (checkbox.checked) {
+          segment.classList.add('read');
+        } else if (i <= lastReadIndex) {
+          segment.classList.add('skipped');
+        } else {
+          segment.classList.add('unread');
+        }
+
+        container.appendChild(segment);
+      }
+
+      const percent = Math.round((read / total) * 100);
+      const label = document.querySelector('.progress-label');
+      label.textContent = `📚 Pokrok v sérii: ${percent}%`;
+    }
+  </script>
+</body>
+</html>
